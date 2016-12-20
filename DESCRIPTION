@@ -1,0 +1,18 @@
+Package: vcomp
+Type: Package
+Title: Variance Component Analysis
+Version: 1.0
+Author: Rik de Wijn
+Date: 2016-12-20
+Maintainer: PamGene Support <support@pamgene.com>
+Description: RStepOperator for Variance Component Analysis
+License:
+Imports:
+    dplyr,
+    data.table,
+    lme4,
+    ggplot2,
+    shiny,
+    bnutil
+LazyData: TRUE
+RoxygenNote: 5.0.1
