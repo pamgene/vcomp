@@ -27,8 +27,8 @@ shinyServerRun = function(input, output, session, context) {
           ),
           tabPanel("Graph",
                    selectInput("graphtype", "Graph Type", choices = c("CV", "relative", "SD")),
+                   checkboxInput("logx" , "Logarithmic x-axis", value = FALSE),
                    splitLayout(
-                     checkboxInput("logx" , "Logarithmic x-axis", value = FALSE),
                      textInput("xmin",    label = "x-axis lower limit", value = "0"),
                      textInput("xmax",    label=  "x-axis upper limit", value = "auto"),
                      textInput('ymin',    label = "y-axis lower limit", value = "0"),
