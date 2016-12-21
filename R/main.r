@@ -14,7 +14,7 @@ shinyServerRun = function(input, output, session, context) {
       sidebarPanel(
         tags$div(HTML("<strong><font color = blue>Variance Component Analysis</font></strong>")),
         tags$hr(),
-        textInput("model", "value ~", value = "1 + (1|SFactor6)"),
+        textInput("model", "value ~", value = "1"),
         actionButton("add", "Add term for:"),
         selectInput("terms", "", choices = list(), multiple = TRUE),
         actionButton("start", "Start")
@@ -22,12 +22,19 @@ shinyServerRun = function(input, output, session, context) {
       mainPanel(
         tabsetPanel(
           tabPanel("Model Output",
-              selectInput("pid", "Select peptide", choices = list()),
-              verbatimTextOutput("modelOutput")
+                   selectInput("pid", "Select peptide", choices = list()),
+                   verbatimTextOutput("modelOutput")
           ),
           tabPanel("Graph",
-              selectInput("graphtype", "Graph Type", choices = c("SD", "relative", "CV")),
-              plotOutput("graphout")
+                   selectInput("graphtype", "Graph Type", choices = c("CV", "relative", "SD")),
+                   splitLayout(
+                     checkboxInput("logx" , "Logarithmic x-axis", value = FALSE),
+                     textInput("xmin",    label = "x-axis lower limit", value = "0"),
+                     textInput("xmax",    label=  "x-axis upper limit", value = "auto"),
+                     textInput('ymin',    label = "y-axis lower limit", value = "0"),
+                     textInput('ymax',    label = "y-axis upper limit", value = "1")
+                   ),
+                   plotOutput("graphout", height = 700)
           )
         )
       )
@@ -78,15 +85,30 @@ shinyServerRun = function(input, output, session, context) {
     })
 
     output$graphout = renderPlot({
+      if (input$start == 0) return()
       vcdf = vcReactive()
       if(input$graphtype == "SD"){
         aPlot = ggplot(vcdf, aes(x = y0, y = s, colour = comp)) + ylab("SD")
       } else if (input$graphtype == "relative"){
         aPlot = ggplot(vcdf, aes(x = y0, y = r, colour = comp)) + ylab("Relative Var")
       } else{
-        aPlot = ggplot(vcdf, aes(x = y0, y = r, colour = comp)) + ylab("CV")
+        aPlot = ggplot(vcdf, aes(x = y0, y = cv, colour = comp)) + ylab("CV")
       }
-      aPlot = aPlot + geom_point() + ylim(c(0, 0.5)) + facet_wrap(~comp)
+
+      xLim = as.numeric(c(input$xmin, input$xmax))
+      yLim = as.numeric(c(input$ymin, input$ymax))
+
+      aPlot = aPlot + ylim(yLim)
+      aPlot = aPlot + xlim(xLim)
+
+      if(input$logx){
+        if (!any(is.na(xLim)) & all(xLim > 0)){
+          aPlot = aPlot + scale_x_log10(limits = xLim)
+        } else {
+          aPlot = aPlot + scale_x_log10()
+        }
+      }
+      aPlot = aPlot + geom_point() + facet_wrap(~comp)
       print(aPlot)
     })
 

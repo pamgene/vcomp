@@ -1,10 +1,9 @@
 modelOperator = function(df, model){
   model.fac = attr(terms(model), "term.labels")
-
-  if (length(model.fac)>1){
-    for (i in 1:length(model.fac)){
-      df[,grepl(model.fac[i], colnames(df))] = as.factor(df[,grepl(model.fac[i], colnames(df))])
-    }
+  if (length(model.fac)>0){
+      for (f in colnames(df)){
+        if(any(grepl(f, model.fac))) df[[f]] = as.factor(df[[f]])
+      }
   }
   models = df %>% group_by(ID, rowSeq) %>% do({
     tryCatch({
@@ -34,7 +33,7 @@ getVarComp = function(df){
       r = v/sum(v)
       out = data.frame(comp = comps, s = s, r = r, cv = cv, y0 = y0)
     } else {
-      out = NULL
+      out = data.table()
     }
   })
 }
