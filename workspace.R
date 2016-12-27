@@ -16,6 +16,7 @@ setResult = function(annotatedResult){
 
 bnMessageHandler = bnshiny::BNMessageHandler$new()
 bnMessageHandler$getFolderHandler = getFolder
+bnMessageHandler$getRunFolderHandler = getFolder
 bnMessageHandler$getDataHandler = getData
 bnMessageHandler$setResultHandler = setResult
 

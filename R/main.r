@@ -6,8 +6,9 @@
 #' @export
 shinyServerRun = function(input, output, session, context) {
 
-  getFolderReactive = context$getFolder()
+  getFolderReactive = context$getRunFolder()
   getDataReactive = context$getData()
+  getSettingsReactive = context$getFolder()
 
   output$body = renderUI({
     sidebarLayout(
@@ -34,7 +35,9 @@ shinyServerRun = function(input, output, session, context) {
                      textInput('ymin',    label = "y-axis lower limit", value = "0"),
                      textInput('ymax',    label = "y-axis upper limit", value = "1")
                    ),
-                   plotOutput("graphout", height = 700)
+                   plotOutput("graphout", height = 700),
+                   actionLink("png", "Save graph"),
+                   verbatimTextOutput("status")
           )
         )
       )
@@ -50,8 +53,26 @@ shinyServerRun = function(input, output, session, context) {
     if (is.null(getData)) return()
     bndata = getData()
 
+    getSettings = getSettingsReactive$value
+    if (is.null(getSettings)) return()
+    settingsFile = file.path(getSettings(), "settings.RData")
+
+    if(file.exists(settingsFile)){
+      context$loadFile(settingsFile)
+      updateTextInput(session, model, value = storedmodel)
+    }
+
+    session$onSessionEnded( function()({
+        settingsFile = file.path(getSettings(), "settings.RData")
+        storedmodel = input$model
+        context$saveFile(file = settingsFile, storedmodel)
+      })
+    )
+
     arrayColumnLabels = bndata$arrayColumnNames
     updateSelectInput(session, "terms", choices = arrayColumnLabels, selected = arrayColumnLabels[1])
+
+
 
     observeEvent(input$add, {
       newterms = paste( "(1|", input$terms, ")", sep = "", collapse = "+")
@@ -84,8 +105,7 @@ shinyServerRun = function(input, output, session, context) {
       return(models[bIdx,]$V1[[1]])
     })
 
-    output$graphout = renderPlot({
-      if (input$start == 0) return()
+    plotReactive = reactive({
       vcdf = vcReactive()
       if(input$graphtype == "SD"){
         aPlot = ggplot(vcdf, aes(x = y0, y = s, colour = comp)) + ylab("SD")
@@ -109,9 +129,50 @@ shinyServerRun = function(input, output, session, context) {
         }
       }
       aPlot = aPlot + geom_point() + facet_wrap(~comp)
+
+    })
+
+    save.png = reactive({
+      filename = file.path(getFolder(), paste("VC", format(Sys.time(), "%Y%m%d-%H%M.png")) )
+      aPlot = plotReactive()
+      ggsave(aPlot, file= filename)
+    })
+
+    output$graphout = renderPlot({
+      if (input$start == 0) return()
+      aPlot = plotReactive()
       print(aPlot)
+    })
+
+    output$status = renderText({
+      if (input$png > 0){
+        save.png()
+        return("Plot saved as image in results folder")
+      }
+      return(".")
     })
 
   })
 }
 
+#' @export
+shinyServerShowResults = function(input, output, session, context){
+  getFolderReactive = context$getRunFolder()
+
+  output$body = renderUI({
+    mainPanel(
+      tags$hr(),
+      tags$div(HTML("<strong><font color = blue>Find your saved plots in the results folder</font></strong>")),
+      tags$hr(),
+      actionLink("resfolder", "Open results folder")
+    )
+  })
+
+  observe({
+    getFolder = getFolderReactive$value
+    if (is.null(getFolder)) return()
+    observeEvent(input$resfolder, {
+      shell.exec(getFolder())
+    })
+  })
+}
