@@ -26,7 +26,7 @@ getVarComp = function(df){
       v = as.numeric(vc)
       names(v) = attr(vc, 'names')
       v = c(v, residual = attr(vc, 'sc')^2)
-      y0 = fixef(aLme)
+      y0 = fixef(aLme)[1]
       comps = names(v)
       s = sqrt(v)
       cv = sqrt(exp( (s*log(2))^2 ) - 1)
@@ -38,4 +38,15 @@ getVarComp = function(df){
   })
 }
 
+getFxdComp = function(df){
+  dffxd = df %>% group_by(ID, rowSeq) %>% do({
+    aLme = .$V1[[1]]
+    if (!is.null(aLme)){
+      fxd = fixef(aLme)
+      out = data.frame(comp = names(fxd), fxd = fxd, y0 = fxd[1])
+    } else {
+      out = data.table()
+    }
+  })
+}
 

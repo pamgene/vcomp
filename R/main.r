@@ -26,7 +26,7 @@ shinyServerRun = function(input, output, session, context) {
                    selectInput("pid", "Select peptide", choices = list()),
                    verbatimTextOutput("modelOutput")
           ),
-          tabPanel("Graph",
+          tabPanel("Random Factors",
                    selectInput("graphtype", "Graph Type", choices = c("CV", "relative", "SD")),
                    checkboxInput("logx" , "Logarithmic x-axis", value = FALSE),
                    splitLayout(
@@ -38,6 +38,12 @@ shinyServerRun = function(input, output, session, context) {
                    plotOutput("graphout", height = 700),
                    actionLink("png", "Save graph"),
                    verbatimTextOutput("status")
+          ),
+
+          tabPanel("Fixed Factors",
+                   plotOutput("fxdout", height = 700),
+                   actionLink("fxdpng", "Save graph"),
+                   verbatimTextOutput("fxdstatus")
           )
         )
       )
@@ -97,6 +103,12 @@ shinyServerRun = function(input, output, session, context) {
       vcdf = getVarComp(res[[1]])
     })
 
+    fxdReactive = reactive({
+      input$start
+      res = modelReactive()
+      fxddf = getFxdComp(res[[1]])
+    })
+
     output$modelOutput = renderPrint({
       if (input$start == 0) return(".")
       res = modelReactive()
@@ -132,9 +144,21 @@ shinyServerRun = function(input, output, session, context) {
 
     })
 
+    fxdPlotReactive = reactive({
+      df = fxdReactive()
+      aPlot = ggplot(df, aes(x = y0, y = fxd, colour = comp)) + geom_point()
+      aPlot = aPlot + facet_wrap(~comp)
+    })
+
     save.png = reactive({
       filename = file.path(getFolder(), paste("VC", format(Sys.time(), "%Y%m%d-%H%M.png")) )
       aPlot = plotReactive()
+      ggsave(aPlot, file= filename)
+    })
+
+    save.fxdpng = reactive({
+      filename = file.path(getFolder(), paste("FXD", format(Sys.time(), "%Y%m%d-%H%M.png")) )
+      aPlot = fxdPlotReactive()
       ggsave(aPlot, file= filename)
     })
 
@@ -144,9 +168,23 @@ shinyServerRun = function(input, output, session, context) {
       print(aPlot)
     })
 
+    output$fxdout = renderPlot({
+      if (input$start == 0) return()
+      aPlot = fxdPlotReactive()
+      print(aPlot)
+    })
+
     output$status = renderText({
       if (input$png > 0){
         save.png()
+        return("Plot saved as image in results folder")
+      }
+      return(".")
+    })
+
+    output$fxdstatus = renderText({
+      if (input$fxdpng > 0){
+        save.fxdpng()
         return("Plot saved as image in results folder")
       }
       return(".")
