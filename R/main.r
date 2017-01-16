@@ -147,7 +147,7 @@ shinyServerRun = function(input, output, session, context) {
     fxdPlotReactive = reactive({
       df = fxdReactive()
       aPlot = ggplot(df, aes(x = y0, y = fxd, colour = comp)) + geom_point()
-      aPlot = aPlot + facet_wrap(~comp)
+      aPlot = aPlot + facet_wrap(~comp, scales = "free_y")
     })
 
     save.png = reactive({
