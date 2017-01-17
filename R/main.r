@@ -10,6 +10,7 @@ shinyServerRun = function(input, output, session, context) {
   getDataReactive = context$getData()
   getSettingsReactive = context$getFolder()
 
+
   output$body = renderUI({
     sidebarLayout(
       sidebarPanel(
@@ -65,19 +66,11 @@ shinyServerRun = function(input, output, session, context) {
 
     if(file.exists(settingsFile)){
       context$loadFile(settingsFile)
-      updateTextInput(session, model, value = storedmodel)
+      updateTextInput(session, "model", value = object$modelSpec)
     }
-
-    session$onSessionEnded( function()({
-        settingsFile = file.path(getSettings(), "settings.RData")
-        storedmodel = input$model
-        context$saveFile(file = settingsFile, storedmodel)
-      })
-    )
 
     arrayColumnLabels = bndata$arrayColumnNames
     updateSelectInput(session, "terms", choices = arrayColumnLabels, selected = arrayColumnLabels[1])
-
 
 
     observeEvent(input$add, {
@@ -89,6 +82,8 @@ shinyServerRun = function(input, output, session, context) {
     modelReactive = reactive({
       input$start
       isolate({
+
+        context$saveFile(file = settingsFile, list(modelSpec = input$model) )
         models = modelOperator(bndata$data, model = formula(paste("value ~",input$model) ))
         pidList = paste(models$ID, " (",models$rowSeq,")", sep = "")
         updateSelectInput(session, "pid", choices = pidList, selected = pidList[1])
