@@ -16,10 +16,13 @@ shinyServerRun = function(input, output, session, context) {
       sidebarPanel(
         tags$div(HTML("<strong><font color = blue>Variance Component Analysis</font></strong>")),
         tags$hr(),
+        actionButton("start", "Run model"),
+        tags$hr(),
         textInput("model", "value ~", value = "1"),
         actionButton("add", "Add term for:"),
         selectInput("terms", "", choices = list(), multiple = TRUE),
-        actionButton("start", "Start")
+        tags$hr(),
+        actionButton("done", "Done")
       ),
       mainPanel(
         tabsetPanel(
@@ -65,8 +68,8 @@ shinyServerRun = function(input, output, session, context) {
     settingsFile = file.path(getSettings(), "settings.RData")
 
     if(file.exists(settingsFile)){
-      context$loadFile(settingsFile)
-      updateTextInput(session, "model", value = object$modelSpec)
+      settings = load(settingsFile)
+      updateTextInput(session, "model", value = modelSpec)
     }
 
     arrayColumnLabels = bndata$arrayColumnNames
@@ -79,11 +82,19 @@ shinyServerRun = function(input, output, session, context) {
       updateTextInput(session, "model", value = newmodel)
     })
 
+    observeEvent(input$done, {
+      # dummy return
+      meta = data.frame(labelDescription = c("rowSeq","colSeq", "dummy"),
+                        groupingType = c("rowSeq", "colSeq", "QuantitationType"))
+
+      result = AnnotatedData$new(data = data.frame(rowSeq = 1, colSeq = 1, dummy = NaN), metadata = meta)
+      context$setResult(result)
+    })
     modelReactive = reactive({
       input$start
       isolate({
-
-        context$saveFile(file = settingsFile, list(modelSpec = input$model) )
+        modelSpec = input$model
+        save(file = settingsFile, modelSpec)
         models = modelOperator(bndata$data, model = formula(paste("value ~",input$model) ))
         pidList = paste(models$ID, " (",models$rowSeq,")", sep = "")
         updateSelectInput(session, "pid", choices = pidList, selected = pidList[1])
