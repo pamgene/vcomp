@@ -1,14 +1,15 @@
-modelOperator = function(df, model){
-  model.fac = attr(terms(model), "term.labels")
-  if (length(model.fac)>0){
-      for (f in colnames(df)){
-        if(any(grepl(f, model.fac))) df[[f]] = as.factor(df[[f]])
-      }
+modelOperator = function(df, model, nomfac){
+
+  if (length(nomfac) > 0){
+    for (i in 1:length(nomfac)){
+      df[[ nomfac[i] ]] = as.factor(df[[ nomfac[i] ]])
+    }
   }
   models = df %>% group_by(ID, rowSeq) %>% do({
     tryCatch({
       aLme = lmer(model, data = .)
-      return(data.table(list(aLme)))
+      cdf = data.frame(colSeq = .$colSeq, cValue = fixef(aLme)[1] + resid(aLme))
+      return(data.table(list(aLme), list(cdf) ))
     },
     error = function(e){
       print(e)
@@ -50,3 +51,6 @@ getFxdComp = function(df){
   })
 }
 
+getCVal = function(df){
+  df_out = df%>%group_by(ID, rowSeq) %>% do({return(.$V2[[1]])})
+}

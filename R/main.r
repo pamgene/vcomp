@@ -22,6 +22,8 @@ shinyServerRun = function(input, output, session, context) {
         actionButton("add", "Add term for:"),
         selectInput("terms", "", choices = list(), multiple = TRUE),
         tags$hr(),
+        selectInput("nominal", "Categorical factors:", choices = list(), multiple = TRUE),
+        tags$hr(),
         actionButton("done", "Done")
       ),
       mainPanel(
@@ -75,6 +77,11 @@ shinyServerRun = function(input, output, session, context) {
     arrayColumnLabels = bndata$arrayColumnNames
     updateSelectInput(session, "terms", choices = arrayColumnLabels, selected = arrayColumnLabels[1])
 
+    bNum = vector(length = length(arrayColumnLabels))
+    for(i in 1:length(bNum)){
+      bNum[i] = class(bndata$data[[ arrayColumnLabels[i] ]]) == "numeric"
+    }
+    updateSelectInput(session, "nominal", choices = arrayColumnLabels, selected = arrayColumnLabels[!bNum])
 
     observeEvent(input$add, {
       newterms = paste( "(1|", input$terms, ")", sep = "", collapse = "+")
@@ -83,11 +90,13 @@ shinyServerRun = function(input, output, session, context) {
     })
 
     observeEvent(input$done, {
-      # dummy return
-      meta = data.frame(labelDescription = c("rowSeq","colSeq", "dummy"),
+      res = modelReactive()
+      cRes = getCVal(res[[1]])
+      cRes = cRes[c("rowSeq", "colSeq", "cValue")]
+      meta = data.frame(labelDescription = c("rowSeq","colSeq", "cValue"),
                         groupingType = c("rowSeq", "colSeq", "QuantitationType"))
 
-      result = AnnotatedData$new(data = data.frame(rowSeq = 1, colSeq = 1, dummy = NaN), metadata = meta)
+      result = AnnotatedData$new(data = cRes, metadata = meta)
       context$setResult(result)
     })
     modelReactive = reactive({
@@ -95,7 +104,7 @@ shinyServerRun = function(input, output, session, context) {
       isolate({
         modelSpec = input$model
         save(file = settingsFile, modelSpec)
-        models = modelOperator(bndata$data, model = formula(paste("value ~",input$model) ))
+        models = modelOperator(bndata$data, model = formula(paste("value ~",input$model) ), nomfac = input$nominal)
         pidList = paste(models$ID, " (",models$rowSeq,")", sep = "")
         updateSelectInput(session, "pid", choices = pidList, selected = pidList[1])
         result = list(models, pidList)
