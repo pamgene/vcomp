@@ -1,4 +1,4 @@
-modelOperator = function(df, model, nomfac){
+modelOperator = function(df, model, nomfac, reml = TRUE){
 
   if (length(nomfac) > 0){
     for (i in 1:length(nomfac)){
@@ -7,8 +7,8 @@ modelOperator = function(df, model, nomfac){
   }
   models = df %>% group_by(ID, rowSeq) %>% do({
     tryCatch({
-      aLme = lmer(model, data = .)
-      cdf = data.frame(colSeq = .$colSeq, cValue = fixef(aLme)[1] + resid(aLme))
+      aLme = lmer(model, data = ., REML = reml)
+      cdf = data.frame(colSeq = .$colSeq, cValue = fixef(aLme)[1] + resid(aLme), residuals = resid(aLme))
       return(data.table(list(aLme), list(cdf) ))
     },
     error = function(e){
@@ -51,6 +51,6 @@ getFxdComp = function(df){
   })
 }
 
-getCVal = function(df){
+getdfout = function(df){
   df_out = df%>%group_by(ID, rowSeq) %>% do({return(.$V2[[1]])})
 }

@@ -10,7 +10,6 @@ shinyServerRun = function(input, output, session, context) {
   getDataReactive = context$getData()
   getSettingsReactive = context$getFolder()
 
-
   output$body = renderUI({
     sidebarLayout(
       sidebarPanel(
@@ -18,6 +17,7 @@ shinyServerRun = function(input, output, session, context) {
         tags$hr(),
         actionButton("start", "Run model"),
         tags$hr(),
+        checkboxInput("reml", "REML", value = TRUE),
         textInput("model", "value ~", value = "1"),
         actionButton("add", "Add term for:"),
         selectInput("terms", "", choices = list(), multiple = TRUE),
@@ -30,7 +30,8 @@ shinyServerRun = function(input, output, session, context) {
         tabsetPanel(
           tabPanel("Model Output",
                    selectInput("pid", "Select peptide", choices = list()),
-                   verbatimTextOutput("modelOutput")
+                   verbatimTextOutput("modelOutput"),
+                   tableOutput("ic")
           ),
           tabPanel("Random Factors",
                    selectInput("graphtype", "Graph Type", choices = c("CV", "relative", "SD")),
@@ -50,6 +51,7 @@ shinyServerRun = function(input, output, session, context) {
                    plotOutput("fxdout", height = 700),
                    actionLink("fxdpng", "Save graph"),
                    verbatimTextOutput("fxdstatus")
+
           )
         )
       )
@@ -91,10 +93,10 @@ shinyServerRun = function(input, output, session, context) {
 
     observeEvent(input$done, {
       res = modelReactive()
-      cRes = getCVal(res[[1]])
-      cRes = cRes[c("rowSeq", "colSeq", "cValue")]
-      meta = data.frame(labelDescription = c("rowSeq","colSeq", "cValue"),
-                        groupingType = c("rowSeq", "colSeq", "QuantitationType"))
+      cRes = getdfout(res[[1]])
+      cRes = cRes[c("rowSeq", "colSeq", "cValue", "residuals")]
+      meta = data.frame(labelDescription = c("rowSeq","colSeq", "cValue", "residuals"),
+                        groupingType = c("rowSeq", "colSeq", "QuantitationType", "QuantitationType"))
 
       result = AnnotatedData$new(data = cRes, metadata = meta)
       context$setResult(result)
@@ -104,7 +106,7 @@ shinyServerRun = function(input, output, session, context) {
       isolate({
         modelSpec = input$model
         save(file = settingsFile, modelSpec)
-        models = modelOperator(bndata$data, model = formula(paste("value ~",input$model) ), nomfac = input$nominal)
+        models = modelOperator(bndata$data, model = formula(paste("value ~",input$model) ), nomfac = input$nominal, reml = input$reml)
         pidList = paste(models$ID, " (",models$rowSeq,")", sep = "")
         updateSelectInput(session, "pid", choices = pidList, selected = pidList[1])
         result = list(models, pidList)
@@ -131,6 +133,16 @@ shinyServerRun = function(input, output, session, context) {
       models = res[[1]]
       return(models[bIdx,]$V1[[1]])
     })
+
+    output$ic = renderTable({
+      if (input$start == 0) return(NULL)
+      res = modelReactive()
+      bIdx = input$pid == res[[2]]
+      models = res[[1]]
+      this = models[bIdx,]$V1[[1]]
+      df = data.frame("Parameter" = c("AIC", "BIC"), value = c(AIC(this), BIC(this)))
+    })
+
 
     plotReactive = reactive({
       vcdf = vcReactive()
