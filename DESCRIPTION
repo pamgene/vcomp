@@ -1,7 +1,7 @@
-Package: vcomp
+Package: vcomp2
 Type: Package
 Title: Variance Component Analysis
-Version: 1.9
+Version: 2.0
 Author: Rik de Wijn
 Date: 2016-12-27
 Maintainer: PamGene Support <support@pamgene.com>
