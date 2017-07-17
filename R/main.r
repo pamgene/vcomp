@@ -1,3 +1,4 @@
+#' @import plyr
 #' @import dplyr
 #' @import bnutil
 #' @import ggplot2
@@ -109,9 +110,8 @@ shinyServerRun = function(input, output, session, context) {
         models = modelOperator(bndata$data, model = formula(paste("value ~",input$model) ), nomfac = input$nominal, reml = input$reml)
         pidList = paste(models$ID, " (",models$rowSeq,")", sep = "")
         updateSelectInput(session, "pid", choices = pidList, selected = pidList[1])
-        result = list(models, pidList)
       })
-      return(result)
+      result = list(models, pidList)
     })
 
     vcReactive = reactive({

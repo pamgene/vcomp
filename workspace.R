@@ -1,12 +1,16 @@
 library(bnutil)
-library(vcomp)
+library(vcomp2)
 library(shiny)
 library(lme4)
+library(plyr)
 library(dplyr)
 library(data.table)
 library(ggplot2)
 
-getData = function() AnnotatedData$new(data=vcdata, metadata=vcmeta)
+getData = function() {
+  res = AnnotatedData$new(data=vc.df, metadata=vc.mdf)
+  return(res)
+}
 
 getFolder = function() file.path(getwd(), 'run')
 
@@ -20,4 +24,4 @@ bnMessageHandler$getRunFolderHandler = getFolder
 bnMessageHandler$getDataHandler = getData
 bnMessageHandler$setResultHandler = setResult
 
-bnshiny::startBNTestShiny('vcomp', sessionType='run', bnMessageHandler=bnMessageHandler)
+bnshiny::startBNTestShiny('vcomp2', sessionType='run', bnMessageHandler=bnMessageHandler)
