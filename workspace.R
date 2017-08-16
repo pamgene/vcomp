@@ -6,9 +6,10 @@ library(plyr)
 library(dplyr)
 library(data.table)
 library(ggplot2)
+library(pgMulticore)
 
 getData = function() {
-  res = AnnotatedData$new(data=vc.df, metadata=vc.mdf)
+  res = AnnotatedData$new(data=tam.df, metadata=tam.mdf)
   return(res)
 }
 

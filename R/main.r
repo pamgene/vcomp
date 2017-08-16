@@ -74,7 +74,7 @@ shinyServerRun = function(input, output, session, context) {
 
     if(file.exists(settingsFile)){
       settings = load(settingsFile)
-      updateTextInput(session, "model", value = modelSpec)
+      updateTextInput(session, "model", value =aModelSpec)
     }
 
     arrayColumnLabels = bndata$arrayColumnNames
@@ -94,55 +94,62 @@ shinyServerRun = function(input, output, session, context) {
 
     observeEvent(input$done, {
       res = modelReactive()
-      cRes = getdfout(res[[1]])
+      cRes = getdfout(res)
       cRes = cRes[c("rowSeq", "colSeq", "cValue", "residuals")]
       meta = data.frame(labelDescription = c("rowSeq","colSeq", "cValue", "residuals"),
                         groupingType = c("rowSeq", "colSeq", "QuantitationType", "QuantitationType"))
 
       result = AnnotatedData$new(data = cRes, metadata = meta)
       context$setResult(result)
-    })
+    }, ignoreInit = TRUE)
+
+
     modelReactive = reactive({
       input$start
       isolate({
-        modelSpec = input$model
-        save(file = settingsFile, modelSpec)
-        models = modelOperator(bndata$data, model = formula(paste("value ~",input$model) ), nomfac = input$nominal, reml = input$reml)
-        pidList = paste(models$ID, " (",models$rowSeq,")", sep = "")
-        updateSelectInput(session, "pid", choices = pidList, selected = pidList[1])
+         aModelSpec = input$model
+         aNomFac    = input$nominal
+         aReml      = input$reml
       })
-      result = list(models, pidList)
+      save(file = settingsFile, aModelSpec)
+      models = modelOperator(bndata$data, model = formula(paste("value ~",aModelSpec) ), nomfac = aNomFac, reml =  aReml)
+      pidList = models$rowSeq
+      names(pidList) = models$ID
+      updateSelectInput(session, "pid", choices = pidList, selected = pidList[1])
+      return(models)
     })
 
     vcReactive = reactive({
-      input$start
-      res = modelReactive()
-      vcdf = getVarComp(res[[1]])
+      vcdf = getVarComp(modelReactive())
     })
 
     fxdReactive = reactive({
-      input$start
-      res = modelReactive()
-      fxddf = getFxdComp(res[[1]])
+      fxddf = getFxdComp(modelReactive())
     })
 
     output$modelOutput = renderPrint({
       if (input$start == 0) return(".")
       res = modelReactive()
-      bIdx = input$pid == res[[2]]
-      models = res[[1]]
-      return(models[bIdx,]$V1[[1]])
+      if(!is.null(res$rowSeq)){
+        this = res %>% filter(rowSeq == input$pid)
+        return(this$aLme)
+      } else {
+        return(".")
+      }
+
     })
 
-    output$ic = renderTable({
+     output$ic = renderTable({
       if (input$start == 0) return(NULL)
       res = modelReactive()
-      bIdx = input$pid == res[[2]]
-      models = res[[1]]
-      this = models[bIdx,]$V1[[1]]
-      df = data.frame("Parameter" = c("AIC", "BIC"), value = c(AIC(this), BIC(this)))
+      this = res %>% filter(rowSeq == input$pid)
+      if (length(this$aLme)>0){
+        df = data.frame("Parameter" = c("AIC", "BIC"), value = c(AIC(this$aLme[[1]]), BIC(this$aLme[[1]])))
+        return(df)
+      } else {
+        return(NULL)
+      }
     })
-
 
     plotReactive = reactive({
       vcdf = vcReactive()
