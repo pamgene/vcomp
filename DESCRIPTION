@@ -1,19 +1,12 @@
 Package: vcomp2
 Type: Package
 Title: Variance Component Analysis
-Version: 2.2
+Version: 2.3
 Author: Rik de Wijn
 Date: 2017-08-13
 Maintainer: PamGene Support <support@pamgene.com>
 Description: RStepOperator for Variance Component Analysis.
 License:
-Imports:
-    dplyr,
-    data.table,
-    lme4,
-    ggplot2,
-    shiny,
-    bnutil,
-    pgMulticore
+Imports:dplyr,data.table,lme4,ggplot2,shiny,bnutil,pgMulticore
 LazyData: TRUE
 RoxygenNote: 6.0.1
