@@ -32,7 +32,8 @@ shinyServerRun = function(input, output, session, context) {
           tabPanel("Model Output",
                    selectInput("pid", "Select peptide", choices = list()),
                    verbatimTextOutput("modelOutput"),
-                   tableOutput("ic")
+                   tableOutput("ic"),
+                   tableOutput("dataInput")
           ),
           tabPanel("Random Factors",
                    selectInput("graphtype", "Graph Type", choices = c("CV", "relative", "SD")),
@@ -74,7 +75,15 @@ shinyServerRun = function(input, output, session, context) {
 
     if(file.exists(settingsFile)){
       settings = load(settingsFile)
-      updateTextInput(session, "model", value =aModelSpec)
+      if(exists("aModelSpec")){
+        updateTextInput(session, "model", value =aModelSpec)
+      }
+      if(exists("aNomFac")){
+        updateSelectInput(session, "nominal", selected = aNomFac)
+      }
+      if(exists("aReml")){
+        updateCheckboxInput(session, "reml", value = aReml)
+      }
     }
 
     arrayColumnLabels = bndata$arrayColumnNames
@@ -111,7 +120,7 @@ shinyServerRun = function(input, output, session, context) {
          aNomFac    = input$nominal
          aReml      = input$reml
       })
-      save(file = settingsFile, aModelSpec)
+      save(file = settingsFile, aModelSpec, aNomFac, aReml)
       models = modelOperator(bndata$data, model = formula(paste("value ~",aModelSpec) ), nomfac = aNomFac, reml =  aReml)
       pidList = models$rowSeq
       names(pidList) = models$ID
@@ -146,6 +155,22 @@ shinyServerRun = function(input, output, session, context) {
       if (length(this$aLme)>0){
         df = data.frame("Parameter" = c("AIC", "BIC"), value = c(AIC(this$aLme[[1]]), BIC(this$aLme[[1]])))
         return(df)
+      } else {
+        return(NULL)
+      }
+    })
+
+    output$dataInput = renderTable({
+      if (input$start == 0) return(NULL)
+      res = modelReactive()
+      this = res %>% filter(rowSeq == input$pid)
+      if (length(this$aLme)>0){
+        idf = this$df[[1]]
+        isolate({
+          bShowCol = apply(as.matrix(colnames(idf)), MARGIN = 1, function(x)grepl(x, input$model))
+          bShowCol = bShowCol | colnames(idf) %in% c("value","rowSeq", "colSeq")
+        })
+        return(idf[,bShowCol])
       } else {
         return(NULL)
       }

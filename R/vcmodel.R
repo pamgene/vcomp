@@ -22,9 +22,9 @@ modelFun = function(df, model, reml){
   if(!inherits(aLme, "try-error")){
     aLme = lmer(model, data = df, REML = reml)
     cdf = data.frame(colSeq = df$colSeq, cValue = fixef(aLme)[1] + resid(aLme), residuals = resid(aLme))
-    out = data.table(rowSeq = df$rowSeq[1], ID = df$ID[1], aLme = list(aLme), cdf = list(cdf ))
+    out = data.table(rowSeq = df$rowSeq[1], ID = df$ID[1], aLme = list(aLme), cdf = list(cdf ), df = list(df))
   } else {
-    out = data.table(rowSeq = df$rowSeq[1], ID = df$ID[1], aLme = list(), cdf = list())
+    out = data.table(rowSeq = df$rowSeq[1], ID = df$ID[1], aLme = list(), cdf = list(), df = list())
   }
   return(out)
 }
