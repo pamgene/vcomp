@@ -86,14 +86,19 @@ shinyServerRun = function(input, output, session, context) {
       }
     }
 
-    arrayColumnLabels = bndata$arrayColumnNames
-    updateSelectInput(session, "terms", choices = arrayColumnLabels, selected = arrayColumnLabels[1])
+    factorColumnLabels = bndata$arrayColumnNames
 
-    bNum = vector(length = length(arrayColumnLabels))
-    for(i in 1:length(bNum)){
-      bNum[i] = class(bndata$data[[ arrayColumnLabels[i] ]]) == "numeric"
+    if (bndata$hasXAxis){
+      factorColumnLabels = c(factorColumnLabels, bndata$xAxisColumnName)
     }
-    updateSelectInput(session, "nominal", choices = arrayColumnLabels, selected = arrayColumnLabels[!bNum])
+
+    updateSelectInput(session, "terms", choices = factorColumnLabels, selected = factorColumnLabels[1])
+
+    bNum = vector(length = length(factorColumnLabels))
+    for(i in 1:length(bNum)){
+      bNum[i] = class(bndata$data[[ factorColumnLabels[i] ]]) == "numeric"
+    }
+    updateSelectInput(session, "nominal", choices = factorColumnLabels, selected = factorColumnLabels[!bNum])
 
     observeEvent(input$add, {
       newterms = paste( "(1|", input$terms, ")", sep = "", collapse = "+")
